@@ -1,24 +1,25 @@
-#=========================================================================================
-#==   TRANSFORM & PLOT                                                                  ==
-#==   - categorise time series into bins representing specific level and change values  ==
-#==   - present histogram of subsequent market returns for bins assessing if the        ==
-#==     distribution of subsequent returns differ                                       ==
-#==                                                                                     ==
-#==   df1 is a dataframe containing the following columns:                              ==
-#==   - date                                                                            ==
-#==   - market index values (labelled "close")                                          ==
-#==   - monthly forward market returns (labelled "fwd_rtn_m")                           ==
-#==   - an indicator time series to be plotted and categorised into bins                ==
-#==     representing specific level and change values                                   ==
-#==                                                                                     ==
-#==   df2 is a dataframe containing the time series to shade the S&P500 plot            ==
-#==   (this should be the "sp_shade" dataframe)                                         ==
-#==                                                                                     ==
-#==   col1 is the indicator in df1 to plot & analyse with histogram                     ==
-#==                                                                                     ==
-#==   col2 is either, level - split time series into 3 levels, or                       ==
-#==                   both  - split time series into 3 levels and 6 month change        ==
-#=========================================================================================
+#===========================================================================================
+#==   TRANSFORM & PLOT                                                                    ==
+#==   - categorise time series into bins representing specific level and change values    ==
+#==   - present histogram of subsequent market returns for bins assessing if the          ==
+#==     distribution of subsequent returns differ                                         ==
+#==                                                                                       ==
+#==   df1 is a dataframe containing the following columns:                                ==
+#==   - date                                                                              ==
+#==   - market index values (labelled "close")                                            ==
+#==   - monthly forward market returns (labelled "fwd_rtn_m")                             ==
+#==   - an indicator time series to be plotted and categorised into bins                  ==
+#==     representing specific level and change values                                     ==
+#==                                                                                       ==
+#==   df2 is a dataframe containing the time series to shade the S&P500 plot              ==
+#==   (this should be the "sp_shade" dataframe)                                           ==
+#==                                                                                       ==
+#==   col1 is the indicator in df1 to plot & analyse with histogram                       ==
+#==                                                                                       ==
+#==   col2 is either, level - split time series into 3 levels, or                         ==
+#==                   both  - split time series into 3 levels and 6 month change          ==
+#==   Requires packages "tidyverse", "cowplot", "caret" and "scales"                      ==
+#===========================================================================================
 
 trans.plot <- function(df1, df2, col1, col2) {
   x1 <- enquo(col1)
@@ -32,10 +33,10 @@ trans.plot <- function(df1, df2, col1, col2) {
     
            # tercile level factor
            x1.qntlx = ntile(!!x1, 3),
-           x1.qntl = case_when(x1.qntlx == 1 ~ "_low", 
-                               x1.qntlx == 2 ~ "_mid", 
-                               x1.qntlx == 3 ~ "_high"),
-    
+           x1.qntl  = case_when(x1.qntlx == 1 ~ "_low", 
+                                x1.qntlx == 2 ~ "_mid", 
+                                x1.qntlx == 3 ~ "_high"),
+
            # change in level indicator
            x1.rtn6  = !!x1 - x1.lag6,
            x1.rtn12 = !!x1 - x1.lag12,
@@ -60,6 +61,7 @@ trans.plot <- function(df1, df2, col1, col2) {
     unite(Indicator, c(rowname, .), sep = "", remove = TRUE) %>% 
     mutate(Indicator =  gsub("x1_", "", Indicator))
   
+  #x2.2 <- quantile(!!x1, probs = 0.33)
   # dummy variables for each (current & lagged) combined level / change factor
   x3 <- predict(dummyVars(" ~ x1_lag00", data = x2), newdata = x2)
   x4 <- predict(dummyVars(" ~ x1_lag06", data = x2), newdata = x2)
@@ -155,9 +157,9 @@ trans.plot <- function(df1, df2, col1, col2) {
   #=========================================================================================
   
   x12<-ggplot(data        = df1, 
-              aes(x        = date, 
-                  y        = !!x1,
-                  group    = 1)) +
+              aes(x       = date, 
+                  y       = !!x1,
+                  group   = 1)) +
     geom_line() +
     geom_rect(data        = df2, 
               inherit.aes = FALSE,
@@ -165,15 +167,17 @@ trans.plot <- function(df1, df2, col1, col2) {
               fill        = 'lightblue', 
               alpha       = 0.5) +
     geom_hline(yintercept = 0, color = "black") +  
+    #geom_hline(yintercept = quantile(!!x1, probs = 0.66), color = "black", linetype = "dotted") + 
+    #geom_hline(yintercept = quantile(!!x1, probs = 0.66), color = "black", linetype = "dotted") + 
     theme_minimal() +
     labs(title            = "",
          subtitle         = "",
-         caption          = "", 
+         #caption          = "Dashed lines represent upper and lower terciles", 
          x                = "Year", 
          y                = quo_name(x1)) + 
     theme(plot.title      = element_text(face  = "bold", size = 14),
           plot.subtitle   = element_text(face  = "italic", size = 9),
-          plot.caption    = element_text(hjust = 0),
+          plot.caption  = element_text(face = "italic", size = 8),
           axis.title.y    = element_text(face  = "italic", size = 9),
           axis.title.x    = element_text(face  = "italic", size = 9))
   
@@ -189,14 +193,9 @@ trans.plot <- function(df1, df2, col1, col2) {
 
 
 
-
-
-
-
-
-#################################
-### winsorize & standardise   ###
-#################################
+#===========================================================================================
+#== winsorize & standardise                                                               ==
+#===========================================================================================
 
 wins.stds <- function(x, ...) {
   y     <- enquos(...)
@@ -208,27 +207,13 @@ wins.stds <- function(x, ...) {
     mutate_at(vars(contains("_10")), funs(scale(.)))
 }
 
-#https://stackoverflow.com/questions/46206677/concatenate-quosures-and-string
-#https://adv-r.hadley.nz/evaluation.html#wrapping-quoting-functions
-
-##### last working version #####
-
-#wins.stds <- function(x, ...) {
-#  y     <- quos(...)
-#  #col_name <- paste0(quo_name(...),".stds")  ### error originating here ###
-#  x %>% select(date, y1, !!!y) %>% 
-#    #rename_at(vars(-date, -y1), !!!col_name := y) %>% 
-#    filter_all(all_vars(!is.na(.))) %>% 
-#    mutate_at(vars(contains("_10")), funs(Winsorize(.))) %>% 
-#    mutate_at(vars(contains("_10")), funs(scale(.)))
-#}
 
 
 
 
-###########################
-### winsorize #############
-###########################
+#===========================================================================================
+#== winsorize                                                                             ==
+#===========================================================================================
 
 wins05 <- function(x) {
   lim <- quantile(x, probs=c(0.05, 0.95))
@@ -239,9 +224,11 @@ wins05 <- function(x) {
 
 
 
-###########################
-### wins      #############
-###########################
+
+
+#===========================================================================================
+#== wins                                                                                  ==
+#===========================================================================================
 
 wins05x = function(x, cut = 0.05){
   cut_point_top <- quantile(x, 1 - cut, na.rm = T)
@@ -255,9 +242,11 @@ wins05x = function(x, cut = 0.05){
 
 
 
-#################################
-### winsorize & scale  0 to 1 ###
-#################################
+
+
+#===========================================================================================
+#== winsorize & scale  0 to 1                                                             ==
+#===========================================================================================
 
 wins.scale <- function(df, col) {
   expr <- enquo(col)
@@ -265,7 +254,8 @@ wins.scale <- function(df, col) {
   df %>% 
     mutate(x1 = case_when(!!expr < quantile(!!expr, 0.05) ~ quantile(!!expr, 0.05),
                           !!expr > quantile(!!expr, 0.95) ~ quantile(!!expr, 0.95),
-                          !!expr > quantile(!!expr, 0.05) | !!expr < quantile(!!expr, 0.95) ~ !!expr)) %>% 
+                          !!expr > quantile(!!expr, 0.05) | !!expr < quantile(!!expr, 0.95) 
+                          ~ !!expr)) %>% 
     mutate(x2 = (x1-min(x1))/(max(x1)-min(x1))) %>% 
     select(date, x2) %>% 
     rename(!!col_name := x2)
