@@ -68,7 +68,7 @@ trans.plot <- function(df1, df2, col1, col2) {
   x5 <- predict(dummyVars(" ~ x1_lag12", data = x2), newdata = x2)
   
   # combine dummy variable sets (current and lagged) to single data frame 
-  x6 <- as.tibble(cbind(x3, x4, x5)) %>% select(-contains("NA")) %>% 
+  x6 <- as_tibble(cbind(x3, x4, x5)) %>% select(-contains("NA")) %>% 
     rownames_to_column(var = 'rowIndex') %>% 
     
     # transform combined dummy variable data from wide to long format
