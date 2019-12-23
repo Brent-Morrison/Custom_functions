@@ -194,6 +194,47 @@ trans.plot <- function(df1, df2, col1, col2) {
 
 
 #===========================================================================================
+#==   NEST TIME SERIES DATA                                                               ==
+#==                                                                                       ==
+#==   df1 is a dataframe containing the following columns:                                ==
+#==   - date                                                                              ==
+#==   - other columns holding the data to be nested                                       ==
+#==   train_length is the length of the training dataset                                  ==
+#==   test_length is the length of the testing dataset and will represent                 == 
+#==   the step forward in time                                                            ==
+#===========================================================================================
+
+ts_nest <- function(df, train_length, test_length) {
+  
+  # Parameters
+  loops <- floor((nrow(df) - train_length) / test_length)
+  start <- nrow(df) - ((loops * test_length) + train_length) + 1
+  
+  # Empty tibble
+  pre_nest_df = tibble()
+  
+  # Loop
+  for (i in seq(start, by = test_length, length.out = loops)) {
+    df <- econ_fin_data
+    df <- slice(df, i:(i + train_length + test_length - 1)) %>% 
+      mutate(nest_label = paste(format(strftime(min(date), "%Y-%m")), 
+                                format(strftime(max(date), "%Y-%m")),
+                                sep = ":"))
+    # Join tables
+    pre_nest_df <- bind_rows(pre_nest_df,df) 
+  }
+  
+  nested_df <- pre_nest_df %>% 
+    group_by(nest_label) %>% 
+    nest() %>% 
+    ungroup()
+}
+
+
+
+
+
+#===========================================================================================
 #== winsorize & standardise                                                               ==
 #===========================================================================================
 
