@@ -7,7 +7,7 @@
 #==   df1 is a dataframe containing the following columns:                                ==
 #==   - date                                                                              ==
 #==   - market index values (labelled "close")                                            ==
-#==   - monthly forward market returns (labelled "fwd_rtn_m")                        ==
+#==   - monthly forward market returns (labelled "fwd_rtn_m")                             ==
 #==   - an indicator time series to be plotted and categorised into bins                  ==
 #==     representing specific level and change values                                     ==
 #==                                                                                       ==
@@ -30,6 +30,7 @@ trans.plot <- function(df1, df2, col1, col2) {
   x2 <- df1 %>% 
     # select data required, including indicator under analysis
     select(date, fwd_rtn_m, !!x1) %>% 
+    drop_na() %>% 
     mutate(x1.lag6  = lag(!!x1, 6),
            x1.lag12 = lag(!!x1, 12), 
     
@@ -106,10 +107,27 @@ trans.plot <- function(df1, df2, col1, col2) {
   
   x10<- ggplot(data = x8, aes(x = fwd_rtn_m, colour = Value_fact, fill = Value_fact)) + 
     geom_density(alpha = 0.3) + 
-    geom_text(data = x9.1, size = 2.5, (aes(x = -0.25, y = 12, label = paste0("Difference in\nmean ", percent(round(mean_diff,4)), sep =" "), colour = NULL, fill = NULL)), hjust = 0) +
-    geom_text(data = x8.2, size = 2.5, (aes(x = -0.25, y = 8, label = paste0("KS pvalue ", percent(round(p_val,4)), sep =" "), colour = NULL, fill = NULL)), hjust = 0) +
+    geom_text(data = x9.1, size = 2.5, 
+              aes(x = -0.25, 
+                  y = 12, 
+                  label = paste0("Difference in\nmean ", 
+                                 percent(round(if_else(is.na(mean_diff), 0, mean_diff), 4)), 
+                                 sep =" "), 
+                  colour = NULL, 
+                  fill = NULL), 
+              hjust = 0) +
+    geom_text(data = x8.2, 
+              size = 2.5, 
+              aes(x = -0.25, 
+                  y = 8, 
+                  label = paste0("KS pvalue ", 
+                                 percent(round(if_else(is.na(p_val), 0, p_val), 4)), 
+                                 sep =" "), 
+                  colour = NULL, 
+                  fill = NULL), 
+              hjust = 0) +
     geom_vline(data     = x9, aes(xintercept = Mean, colour = Value_fact),
-               linetype = "dashed", size=0.5) +
+               linetype = "dashed", size = 0.5) +
     labs(title          = "Subsequent month returns", 
          subtitle       = paste("Conditioned on binary indicator as specified for each facet.  Current values: ", x2.1[1, 1], ", ", x2.1[2, 1], " and ", x2.1[3, 1], ".", sep = ""),
          caption        = " The orange distribution represents subsequent monthly returns during\nperiods when the indicator is in the lag / level / direction specified\nby the facet title.  The blue distribution represent subsequent\nreturns during all other periods.", 
