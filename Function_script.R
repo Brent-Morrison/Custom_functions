@@ -7,7 +7,7 @@
 #==   df1 is a dataframe containing the following columns:                                ==
 #==   - date                                                                              ==
 #==   - market index values (labelled "close")                                            ==
-#==   - monthly forward market returns (labelled "fwd_rtn_m")                             ==
+#==   - monthly forward market returns (labelled "fwd_rtn_m")                        ==
 #==   - an indicator time series to be plotted and categorised into bins                  ==
 #==     representing specific level and change values                                     ==
 #==                                                                                       ==
@@ -22,6 +22,8 @@
 #===========================================================================================
 
 trans.plot <- function(df1, df2, col1, col2) {
+  # use old tidyr::nest
+  nest <- nest_legacy
   x1 <- enquo(col1)
   x1a<- paste0(quo_name(x1), " : ")
   x1b<- enquo(col2)
@@ -177,7 +179,7 @@ trans.plot <- function(df1, df2, col1, col2) {
          y                = quo_name(x1)) + 
     theme(plot.title      = element_text(face  = "bold", size = 14),
           plot.subtitle   = element_text(face  = "italic", size = 9),
-          plot.caption  = element_text(face = "italic", size = 8),
+          plot.caption    = element_text(face = "italic", size = 8),
           axis.title.y    = element_text(face  = "italic", size = 9),
           axis.title.x    = element_text(face  = "italic", size = 9))
   
