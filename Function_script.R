@@ -219,35 +219,46 @@ trans.plot <- function(df1, df2, col1, col2) {
 #==   The following arguments are accepted:                                               ==
 #==   - 'df' is a dataframe containing one column labelled "date".  The "date" column     ==
 #==     must be in a date format                                                          ==
+#==   - 'target' is the variable to be predicted                                          ==
 #==   - 'train_length' is the length of the training dataset                              ==
+#==   - 'vldn_length' is the length of the validation dataset                             ==
 #==   - 'test_length' is the length of the testing dataset and will represent             == 
 #==     the step forward in time                                                          ==
 #===========================================================================================
 
-ts_nest <- function(df, train_length, test_length) {
+ts_nest <- function(df, target, train_length, vldn_length, test_length) {
+  
+  target <- dplyr::enquo(target)
   
   # Parameters
-  loops <- floor((nrow(df) - train_length) / test_length)
-  start <- nrow(df) - ((loops * test_length) + train_length) + 1
+  loops <- floor((nrow(df) - (train_length + vldn_length)) / test_length)
+  start <- nrow(df) - ((loops * test_length) + (train_length + vldn_length)) + 1
   
   # Empty tibble
-  nested_df = tibble()
+  nested_df = data.frame()
   
-  # Loop
+  # Loop for time slices
   for (i in seq(start, by = test_length, length.out = loops)) {
-    df <- econ_fin_data
-    df <- slice(df, i:(i + train_length + test_length - 1)) %>% 
-      mutate(nest_label = paste(format(strftime(min(date), "%Y-%m")), 
-                                format(strftime(max(date), "%Y-%m")),
-                                sep = ":"))
+    df_loop <- slice(df, i:(i + train_length + vldn_length + test_length - 1)) %>% 
+      mutate(
+        nest_label = paste(format(strftime(min(date), "%Y-%m")), 
+                           format(strftime(max(date), "%Y-%m")),
+                           sep = ":"),
+        train_test = c(rep("train", (train_length + vldn_length)), rep("test", test_length))
+      )
     # Join tables
-    nested_df <- bind_rows(nested_df,df) 
+    nested_df <- bind_rows(nested_df, df_loop) 
   }
   
   nested_df <- nested_df %>% 
-    group_by(nest_label) %>% 
+    group_by(nest_label, train_test) %>% 
     nest() %>% 
-    ungroup()
+    ungroup() %>% 
+    pivot_wider(names_from = train_test, values_from = data) %>% 
+    mutate(
+      train = map(train, ~ as.data.frame(.)), 
+      test = map(test, ~ as.data.frame(select(., -!!target)))
+    )
 }
 
 
