@@ -59,7 +59,7 @@ trans.plot <- function(df1, df2, col1, col2) {
     filter(!is.na(x1.lag12))
   
   # current values of factor values for plot text
-  x2.1 <- slice(x2, n()) %>% select(x1_lag00, x1_lag06, x1_lag12) %>% t() %>% 
+  x2.1 <- dplyr::slice(x2, n()) %>% select(x1_lag00, x1_lag06, x1_lag12) %>% t() %>% 
     data.frame() %>% rownames_to_column() %>% 
     unite(Indicator, c(rowname, .), sep = "", remove = TRUE) %>% 
     mutate(Indicator =  gsub("x1_", "", Indicator))
@@ -239,7 +239,7 @@ ts_nest <- function(df, target, train_length, vldn_length, test_length) {
   
   # Loop for time slices
   for (i in seq(start, by = test_length, length.out = loops)) {
-    df_loop <- slice(df, i:(i + train_length + vldn_length + test_length - 1)) %>% 
+    df_loop <- dplyr::slice(df, i:(i + train_length + vldn_length + test_length - 1)) %>% 
       mutate(
         nest_label = paste(format(strftime(min(date), "%Y-%m")), 
                            format(strftime(max(date), "%Y-%m")),
